@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Granny Square Crochet Planner</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #ff69b4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 {
+    color: #ff69b4;
+    margin-bottom: 20px;
+  }
+  .colourEntry {
+    display: flex;
+    flex-direction: column;
+    margin: 5px;
+  }
+  input[type="text"], input[type="file"] {
+    margin: 5px;
+    padding: 5px;
+    border: 2px solid #ff69b4;
+    background-color: #000;
+    color: #ff69b4;
+  }
+  button {
+    margin: 10px;
+    padding: 8px 16px;
+    background-color: #ff69b4;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover {
+    background-color: #ff85c1;
+  }
+  #colourInputs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 550px;
+  }
+  canvas {
+    margin-top: 20px;
+    border: 3px solid #ff69b4;
+    background-color: #111;
+  }
+</style>
+</head>
+<body>
+
+<h1>Granny Square Colour Planner (Filled Circle Stitches)</h1>
+
+<div id="colourInputs">
+  <!-- 5 colour entries -->
+  <div class="colourEntry">
+    <input type="file" class="upload" accept="image/*">
+    <input type="text" placeholder="Colour Name" class="name">
+    <input type="text" placeholder="#FF0000" class="hex">
+  </div>
+  <div class="colourEntry">
+    <input type="file" class="upload" accept="image/*">
+    <input type="text" placeholder="Colour Name" class="name">
+    <input type="text" placeholder="#00FF00" class="hex">
+  </div>
+  <div class="colourEntry">
+    <input type="file" class="upload" accept="image/*">
+    <input type="text" placeholder="Colour Name" class="name">
+    <input type="text" placeholder="#0000FF" class="hex">
+  </div>
+  <div class="colourEntry">
+    <input type="file" class="upload" accept="image/*">
+    <input type="text" placeholder="Colour Name" class="name">
+    <input type="text" placeholder="#FFFF00" class="hex">
+  </div>
+  <div class="colourEntry">
+    <input type="file" class="upload" accept="image/*">
+    <input type="text" placeholder="Colour Name" class="name">
+    <input type="text" placeholder="#FF00FF" class="hex">
+  </div>
+</div>
+
+<button onclick="generateSquare()">Generate Granny Square</button>
+<button onclick="downloadPNG()">Download PNG</button>
+
+<canvas id="grannyCanvas" width="400" height="400"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+<script>
+const canvas = document.getElementById('grannyCanvas');
+const ctx = canvas.getContext('2d');
+const colourEntries = document.querySelectorAll('.colourEntry');
+
+async function generateSquare() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const colours = [];
+
+  for (let entry of colourEntries) {
+    const fileInput = entry.querySelector('.upload');
+    const hexInput = entry.querySelector('.hex');
+
+    if(fileInput.files[0]){
+      const img = await loadImage(fileInput.files[0]);
+      const colorThief = new ColorThief();
+      const [r,g,b] = colorThief.getColor(img);
+      const hex = rgbToHex(r,g,b);
+      hexInput.value = hex;
+      colours.push(hex);
+    } else if(hexInput.value){
+      colours.push(hexInput.value);
+    }
+  }
+
+  if(colours.length < 3){
+    alert("Please add at least 3 colours");
+    return;
+  }
+
+  drawCrochetSquare(colours);
+}
+
+function drawCrochetSquare(colours){
+  const centerX = canvas.width/2;
+  const centerY = canvas.height/2;
+  const rounds = colours.length;
+  const maxSize = canvas.width;
+
+  for(let i=0;i<rounds;i++){
+    const roundSize = maxSize - i*(maxSize/(rounds*1.1));
+    const colour = colours[i];
+
+    const stitchCount = Math.floor(roundSize / 6);
+    const stitchRadius = 2 + Math.random()*1.5;
+
+    // Fill entire square round with circular stitches
+    const startX = centerX - roundSize/2;
+    const startY = centerY - roundSize/2;
+    const endX = centerX + roundSize/2;
+    const endY = centerY + roundSize/2;
+
+    for(let x=startX; x<=endX; x+=roundSize/stitchCount){
+      for(let y=startY; y<=endY; y+=roundSize/stitchCount){
+        // Add randomness to mimic yarn texture
+        const jitterX = Math.random()*1.5;
+        const jitterY = Math.random()*1.5;
+        ctx.beginPath();
+        ctx.arc(x+jitterX, y+jitterY, stitchRadius, 0, Math.PI*2);
+        ctx.fillStyle = colour;
+        ctx.fill();
+      }
+    }
+
+    // Outline round
+    ctx.strokeStyle = "#ff69b4";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(centerX - roundSize/2, centerY - roundSize/2, roundSize, roundSize);
+  }
+}
+
+function downloadPNG(){
+  const link = document.createElement('a');
+  link.download = 'granny_square.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function loadImage(file){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function rgbToHex(r,g,b){
+  return "#" + ((1 << 24) + (r <<16) + (g <<8) + b).toString(16).slice(1);
+}
+</script>
+
+</body>
+</html>
